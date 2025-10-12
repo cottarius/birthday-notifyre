@@ -25,3 +25,7 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+
+weather:
+  api:
+    key: ${WEATHER_API_KEY}

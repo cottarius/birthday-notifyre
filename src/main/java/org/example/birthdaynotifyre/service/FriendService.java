@@ -2,7 +2,7 @@ package org.example.birthdaynotifyre.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.birthdaynotifyre.dto.FriendDto;
+import org.example.birthdaynotifyre.dto.friend.FriendDto;
 import org.example.birthdaynotifyre.entity.Friend;
 import org.example.birthdaynotifyre.mapper.FriendMapper;
 import org.example.birthdaynotifyre.repository.FriendRepository;

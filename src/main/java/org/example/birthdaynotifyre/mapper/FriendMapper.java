@@ -1,6 +1,6 @@
 package org.example.birthdaynotifyre.mapper;
 
-import org.example.birthdaynotifyre.dto.FriendDto;
+import org.example.birthdaynotifyre.dto.friend.FriendDto;
 import org.example.birthdaynotifyre.entity.Friend;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

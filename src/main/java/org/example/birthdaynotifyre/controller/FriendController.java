@@ -8,7 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.example.birthdaynotifyre.dto.FriendDto;
+import org.example.birthdaynotifyre.dto.friend.FriendDto;
 import org.example.birthdaynotifyre.entity.Friend;
 import org.example.birthdaynotifyre.service.FriendService;
 import org.springframework.http.ResponseEntity;

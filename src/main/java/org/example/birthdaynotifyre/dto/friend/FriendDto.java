@@ -1,4 +1,4 @@
-package org.example.birthdaynotifyre.dto;
+package org.example.birthdaynotifyre.dto.friend;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

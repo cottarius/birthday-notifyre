@@ -1,7 +1,7 @@
 package org.example.birthdaynotifyre.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.birthdaynotifyre.dto.FriendDto;
+import org.example.birthdaynotifyre.dto.friend.FriendDto;
 import org.example.birthdaynotifyre.entity.Friend;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +20,12 @@ import java.util.Map;
 
 @Component
 @Slf4j
-public class TelegramBotService extends TelegramLongPollingBot {
+public class TelegramBotService extends TelegramLongPollingBot implements NotificationSender {
 
     private enum DialogState {
         WAITING_FOR_FULLNAME,
         WAITING_FOR_BIRTHDATE,
+        WAITING_FOR_CITY,
         NONE
     }
 
@@ -32,12 +33,21 @@ public class TelegramBotService extends TelegramLongPollingBot {
     private final Map<String, String> tempUserData = new HashMap<>();
 
     private final FriendService friendService;
+    private final WeatherService weatherService;
+    private final SubscriptionService subscriptionService;
+
+    private static final String CITY_TAGANROG = "Taganrog";
 
     @Autowired
     public TelegramBotService(@Value("${telegram.token}") String botToken,
-                              FriendService friendService) {
+                              FriendService friendService,
+                              WeatherService weatherService,
+                              SubscriptionService subscriptionService) {
+
         super(botToken);
         this.friendService = friendService;
+        this.weatherService = weatherService;
+        this.subscriptionService = subscriptionService;
     }
 
     @Override
@@ -49,7 +59,6 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
             log.info("Получено сообщение от {}: {}", userName, messageText);
 
-            // Проверяем состояние диалога
             DialogState currentState = userStates.getOrDefault(chatId, DialogState.NONE);
 
             if (currentState != DialogState.NONE) {
@@ -62,18 +71,28 @@ public class TelegramBotService extends TelegramLongPollingBot {
                     sendMessage("Привет, " + userName + "! Я бот для уведомлений о днях рождения.", chatId);
                     break;
                 case "/help":
-                    sendMessage("Доступные команды:\n" +
-                            "/start - начать работу\n" +
-                            "/help - помощь\n" +
-                            "/add - добавить нового друга\n" +
-                            "/today - посмотреть у кого сегодня день рождения\n" +
-                            "/cancel - отменить текущую операцию", chatId);
+                    sendMessage(showHelp(), chatId);
                     break;
                 case "/add":
                     startAddDialog(chatId);
                     break;
                 case "/today":
                     showBirthdaysToday(chatId);
+                    break;
+                case "/weather_taganrog":
+                    getWeatherInTaganrog(chatId);
+                    break;
+                case "/weather":
+                    startWeatherDialog(chatId);
+                    break;
+                case "/subscribe":
+                    subscribeToNotifications(chatId);
+                    break;
+                case "/unsubscribe":
+                    unsubscribeFromNotifications(chatId);
+                    break;
+                case "/subscriptions":
+                    showSubscriptionStatus(chatId);
                     break;
                 case "/cancel":
                     sendMessage("Нет активных операций для отмены.", chatId);
@@ -84,10 +103,75 @@ public class TelegramBotService extends TelegramLongPollingBot {
         }
     }
 
+    private void subscribeToNotifications(String chatId) {
+        boolean subscribed = subscriptionService.subscribeToWeather(chatId);
+        if (subscribed) {
+            sendMessage("""
+                    ✅ Вы подписались на утренние уведомления о погоде!
+                    Каждый день в 7:00 по Москве вы будете получать погоду в Таганроге.
+                    Для отписки используйте /unsubscribe""", chatId);
+        } else {
+            sendMessage("ℹ️ Вы уже подписаны на утренние уведомления о погоде!", chatId);
+        }
+    }
+
+    private void unsubscribeFromNotifications(String chatId) {
+        boolean unsubscribed = subscriptionService.unsubscribeFromWeather(chatId);
+        if (unsubscribed) {
+            sendMessage("❌ Вы отписались от утренних уведомлений о погоде.\n" +
+                    "Для повторной подписки используйте /subscribe", chatId);
+        } else {
+            sendMessage("ℹ️ Вы не были подписаны на утренние уведомления о погоде.", chatId);
+        }
+    }
+
+    private void startWeatherDialog(String chatId) {
+        userStates.put(chatId, DialogState.WAITING_FOR_CITY);
+        sendMessage("Введите название города на английском языке:\n" +
+                "Для отмены введите /cancel", chatId);
+    }
+
+    private static String showHelp() {
+        return """
+            Доступные команды:
+            /start - начать работу
+            /help - помощь
+            /add - добавить нового друга
+            /today - посмотреть у кого сегодня день рождения
+            /cancel - отменить текущую операцию
+            /weather_taganrog - показывает погоду в Таганроге
+            /weather - показывает погоду в заданном вами городе
+            /subscribe - подписаться на утреннюю рассылку погоды в Таганроге (7:00)
+            /unsubscribe - отписаться от утренней рассылки погоды
+            /subscriptions - показать статус подписки
+            """;
+    }
+
+    private void getWeatherInTaganrog(String chatId) {
+        String weatherInfo = weatherService.getWeatherForCity(CITY_TAGANROG);
+        sendMessage(weatherInfo, chatId);
+    }
+
+    private void getWeatherInCurrentCity(String chatId, String city) {
+        String weatherInfo = weatherService.getWeatherForCity(city);
+        sendMessage(weatherInfo, chatId);
+    }
+
     private void startAddDialog(String chatId) {
         userStates.put(chatId, DialogState.WAITING_FOR_FULLNAME);
         sendMessage("Введите ФИО нового друга (в формате: Фамилия Имя Отчество):\n" +
                 "Для отмены введите /cancel", chatId);
+    }
+
+    private void showSubscriptionStatus(String chatId) {
+        boolean isSubscribed = subscriptionService.isSubscribedToWeather(chatId);
+        if (isSubscribed) {
+            sendMessage("✅ Вы подписаны на утренние уведомления о погоде!\n" +
+                    "Каждый день в 7:00 по Москве вы получаете погоду в Таганроге.", chatId);
+        } else {
+            sendMessage("❌ Вы не подписаны на утренние уведомления о погоде.\n" +
+                    "Используйте /subscribe чтобы подписаться.", chatId);
+        }
     }
 
     private void showBirthdaysToday(String chatId) {
@@ -122,7 +206,6 @@ public class TelegramBotService extends TelegramLongPollingBot {
     }
 
     private void handleDialog(String chatId, String messageText, DialogState currentState) {
-        // Проверяем команду отмены
         if ("/cancel".equalsIgnoreCase(messageText)) {
             cancelDialog(chatId, currentState);
             return;
@@ -131,7 +214,6 @@ public class TelegramBotService extends TelegramLongPollingBot {
         switch (currentState) {
             case WAITING_FOR_FULLNAME:
                 if (isValidFullName(messageText)) {
-                    // Сохраняем ФИО во временные данные
                     tempUserData.put(chatId + "_fullName", messageText.trim());
                     userStates.put(chatId, DialogState.WAITING_FOR_BIRTHDATE);
                     sendMessage("Теперь введите дату рождения в формате ГГГГ-ММ-ДД (например: 1990-05-15):\n" +
@@ -144,15 +226,15 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
             case WAITING_FOR_BIRTHDATE:
                 if (isValidDate(messageText)) {
-                    // Получаем ФИО из временных данных
                     String fullName = tempUserData.get(chatId + "_fullName");
+
                     if (fullName != null) {
                         saveFriend(chatId, fullName, messageText);
                     } else {
                         sendMessage("Ошибка: данные ФИО не найдены. Начните добавление заново с команды /add", chatId);
                         log.error("Данные ФИО не найдены для chatId: {}", chatId);
                     }
-                    // Очищаем временные данные в любом случае
+
                     userStates.remove(chatId);
                     tempUserData.remove(chatId + "_fullName");
                 } else {
@@ -160,7 +242,21 @@ public class TelegramBotService extends TelegramLongPollingBot {
                             "Для отмены введите /cancel", chatId);
                 }
                 break;
+
+            case WAITING_FOR_CITY:
+                if (isValidCity(messageText)) {
+                    getWeatherInCurrentCity(chatId, messageText.trim());
+                    userStates.remove(chatId);
+                } else {
+                    sendMessage("Пожалуйста, введите корректное название города на английском языке:\n" +
+                            "Для отмены введите /cancel", chatId);
+                }
+                break;
         }
+    }
+
+    private boolean isValidCity(String city) {
+        return city != null && city.trim().length() >= 2;
     }
 
     private void cancelDialog(String chatId, DialogState currentState) {
@@ -172,7 +268,6 @@ public class TelegramBotService extends TelegramLongPollingBot {
                 message = "Добавление нового друга отменено. ФИО не было введено.";
                 break;
             case WAITING_FOR_BIRTHDATE:
-                // Получаем ФИО из временных данных
                 fullName = tempUserData.get(chatId + "_fullName");
                 if (fullName != null) {
                     message = "Добавление друга '" + fullName + "' отменено. Данные не сохранены.";
@@ -181,11 +276,13 @@ public class TelegramBotService extends TelegramLongPollingBot {
                     log.warn("ФИО не найдено в tempUserData для chatId: {}", chatId);
                 }
                 break;
+            case WAITING_FOR_CITY:
+                message = "Запрос погоды отменен. Город не был введен.";
+                break;
             default:
                 message = "Операция отменена.";
         }
 
-        // Очищаем состояние и временные данные
         userStates.remove(chatId);
         tempUserData.remove(chatId + "_fullName");
 
@@ -198,7 +295,6 @@ public class TelegramBotService extends TelegramLongPollingBot {
         LocalDate today = LocalDate.now();
         int age = today.getYear() - birthDate.getYear();
 
-        // Если день рождения еще не наступил в этом году, вычитаем 1 год
         if (today.getMonthValue() < birthDate.getMonthValue() ||
                 (today.getMonthValue() == birthDate.getMonthValue() && today.getDayOfMonth() < birthDate.getDayOfMonth())) {
             age--;
@@ -222,13 +318,11 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
     private void saveFriend(String chatId, String fullName, String birthDateStr) {
         try {
-            // Создаем DTO для нового друга
             FriendDto friendDto = FriendDto.builder()
                     .fullName(fullName)
                     .birthDate(java.time.LocalDate.parse(birthDateStr))
                     .build();
 
-            // Сохраняем в базу данных
             friendService.create(friendDto);
 
             sendMessage("Друг успешно добавлен! ✅\n" +
@@ -248,17 +342,29 @@ public class TelegramBotService extends TelegramLongPollingBot {
         return "Cotarius_bot";
     }
 
-    public void sendMessage(String message, String chatID){
+    @Override
+    public void sendMessage(String message, String chatID) {
         SendMessage sendMessage = new SendMessage();
         if (chatID != null) {
             sendMessage.setChatId(chatID);
             sendMessage.setText(message);
             try {
                 execute(sendMessage);
-//                log.atLevel(Level.INFO).log("Сообщение отправлено в телеграм");
             } catch (TelegramApiException e) {
                 log.atLevel(Level.WARN).log("Ошибка при отправке сообщения в телеграм: " + e.getMessage());
             }
+        }
+    }
+
+    @Override
+    public void sendWeatherToChat(String chatId) {
+        try {
+            String weatherInfo = weatherService.getWeatherForCity("Taganrog");
+            String message = "🌅 Доброе утро! Вот погода в Таганроге на сегодня:\n\n" + weatherInfo;
+            sendMessage(message, chatId);
+            log.info("Погода отправлена в чат: {}", chatId);
+        } catch (Exception e) {
+            log.error("Ошибка при отправке погоды в чат {}: {}", chatId, e.getMessage());
         }
     }
 }
