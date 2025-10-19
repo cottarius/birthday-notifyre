@@ -22,9 +22,9 @@ public class WeatherService {
     @Value("${weather.api.key}")
     private String apiKey;
 
-    public String getWeatherForCity(String city) {
+    public String getForecastWeatherForCity(String city) {
         try {
-            String url = String.format("http://api.weatherapi.com/v1/current.json?key=%s&q=%s", apiKey, city);
+            String url = String.format("http://api.weatherapi.com/v1/forecast.json?key=%s&q=%s&days=1", apiKey, city);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .GET()
@@ -54,14 +54,32 @@ public class WeatherService {
             String condition = weatherResponse.getCurrent().getCondition().getText();
             Integer humidity = weatherResponse.getCurrent().getHumidity();
             Double windKph = weatherResponse.getCurrent().getWindKph();
+            Double maxTempC = weatherResponse.getForecast().getForecastDays().stream().findFirst().get().getDay().getMaxTempC();
+            Double minTempC = weatherResponse.getForecast().getForecastDays().stream().findFirst().get().getDay().getMinTempC();
+            Double maxWindKph = weatherResponse.getForecast().getForecastDays().stream().findFirst().get().getDay().getMaxWindKph();
+            Integer dailyChanceOfRain = weatherResponse.getForecast().getForecastDays().stream().findFirst().get().getDay().getDailyChanceOfRain();
+            Integer dailyChanceOfSnow = weatherResponse.getForecast().getForecastDays().stream().findFirst().get().getDay().getDailyChanceOfSnow();
+            String dayCondition = weatherResponse.getForecast().getForecastDays().stream().findFirst().get().getDay().getCondition().getText();
 
-            return String.format("🌤 Погода в %s:\n" +
-                            "🌡 Температура: %.1f°C\n" +
-                            "💭 Ощущается как: %.1f°C\n" +
-                            "☁️  Состояние: %s\n" +
-                            "💧 Влажность: %d%%\n" +
-                            "💨 Ветер: %.1f км/ч",
-                    location, tempC, feelsLikeC, condition, humidity, windKph);
+            return String.format("""
+                            🌤 Сейчас погода в %s:
+                            🌡 Температура: %.1f°C
+                            💭 Ощущается как: %.1f°C
+                            ☁️ Состояние: %s
+                            💧 Влажность: %d%%
+                            💨 Ветер: %.1f км/ч
+                            
+                            В течение дня ожидается погода:
+                            🌡 max температура: %.1f°C
+                            🌡 min температура: %.1f°C
+                            💨 max скорость ветра: %.1f км/ч
+                            ☁️ Вероятность дождя: %d%%
+                            ☁️ Вероятность снега: %d%%
+                            ☁️ Состояние: %s
+                            """,
+                    location, tempC, feelsLikeC, condition, humidity, windKph, maxTempC, minTempC, maxWindKph,
+                    dailyChanceOfRain, dailyChanceOfSnow, dayCondition
+                    );
 
         } catch (Exception e) {
             log.error("Ошибка при парсинге ответа погоды: {}", e.getMessage());

@@ -148,12 +148,12 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
     }
 
     private void getWeatherInTaganrog(String chatId) {
-        String weatherInfo = weatherService.getWeatherForCity(CITY_TAGANROG);
+        String weatherInfo = weatherService.getForecastWeatherForCity(CITY_TAGANROG);
         sendMessage(weatherInfo, chatId);
     }
 
     private void getWeatherInCurrentCity(String chatId, String city) {
-        String weatherInfo = weatherService.getWeatherForCity(city);
+        String weatherInfo = weatherService.getForecastWeatherForCity(city);
         sendMessage(weatherInfo, chatId);
     }
 
@@ -359,7 +359,7 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
     @Override
     public void sendWeatherToChat(String chatId) {
         try {
-            String weatherInfo = weatherService.getWeatherForCity("Taganrog");
+            String weatherInfo = weatherService.getForecastWeatherForCity("Taganrog");
             String message = "🌅 Доброе утро! Вот погода в Таганроге на сегодня:\n\n" + weatherInfo;
             sendMessage(message, chatId);
             log.info("Погода отправлена в чат: {}", chatId);

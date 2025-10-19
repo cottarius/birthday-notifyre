@@ -56,7 +56,7 @@ public class WeatherController {
             )
             @RequestParam(required = false, defaultValue = "Taganrog") String city) {
         try {
-            String weatherInfo = weatherService.getWeatherForCity(city);
+            String weatherInfo = weatherService.getForecastWeatherForCity(city);
 
             String message = String.format("🌤 Погода в %s:\n\n%s", city, weatherInfo);
 
@@ -143,7 +143,7 @@ public class WeatherController {
                     example = "Taganrog"
             )
             @PathVariable String city) {
-        String formattedWeather = weatherService.getWeatherForCity(city);
+        String formattedWeather = weatherService.getForecastWeatherForCity(city);
         return formattedWeather != null && !formattedWeather.contains("Не удалось")
                 ? ResponseEntity.ok(formattedWeather)
                 : ResponseEntity.badRequest().body(formattedWeather);
@@ -177,7 +177,7 @@ public class WeatherController {
             content = @Content(schema = @Schema(implementation = String.class))
     )
     public ResponseEntity<String> getFormattedTaganrogWeather() {
-        String formattedWeather = weatherService.getWeatherForCity("Taganrog");
+        String formattedWeather = weatherService.getForecastWeatherForCity("Taganrog");
         return ResponseEntity.ok(formattedWeather);
     }
 }
