@@ -27,6 +27,7 @@ public class WeatherController {
 
     private final WeatherService weatherService;
     private final NotificationSender notificationSender;
+    private static final String CITY_TAGANROG = "Taganrog";
 
     @PostMapping("/notify/{chatId}")
     @Operation(
@@ -54,7 +55,7 @@ public class WeatherController {
                     description = "Город для получения погоды (опционально, по умолчанию - Taganrog)",
                     example = "Moscow"
             )
-            @RequestParam(required = false, defaultValue = "Taganrog") String city) {
+            @RequestParam(required = false, defaultValue = CITY_TAGANROG) String city) {
         try {
             String weatherInfo = weatherService.getForecastWeatherForCity(city);
 
@@ -77,7 +78,7 @@ public class WeatherController {
     )
     public ResponseEntity<String> sendMorningWeatherNotification(
             @PathVariable String chatId,
-            @RequestParam(required = false, defaultValue = "Taganrog") String city) {
+            @RequestParam(required = false, defaultValue = CITY_TAGANROG) String city) {
         try {
             notificationSender.sendWeatherToChat(chatId);
             return ResponseEntity.ok("✅ Утреннее уведомление о погоде отправлено в чат " + chatId);
@@ -114,7 +115,7 @@ public class WeatherController {
                     example = "Taganrog"
             )
             @PathVariable String city) {
-        WeatherResponse weatherData = weatherService.getWeatherData(city);
+        WeatherResponse weatherData = weatherService.getCurrentWeather(city);
         return weatherData != null
                 ? ResponseEntity.ok(weatherData)
                 : ResponseEntity.badRequest().build();
@@ -160,7 +161,7 @@ public class WeatherController {
             content = @Content(schema = @Schema(implementation = WeatherResponse.class))
     )
     public ResponseEntity<WeatherResponse> getTaganrogWeather() {
-        WeatherResponse weatherData = weatherService.getWeatherData("Taganrog");
+        WeatherResponse weatherData = weatherService.getCurrentWeather(CITY_TAGANROG);
         return weatherData != null
                 ? ResponseEntity.ok(weatherData)
                 : ResponseEntity.badRequest().build();
