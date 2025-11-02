@@ -9,5 +9,6 @@
     <include file="db/changelog/v.1.0.0/001-insert-into-users-data.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/v.1.0.0/002-insert-friends-data.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/v.1.0.0/create-table-subscription.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/v.1.0.0/add-columns-to-friends-and-users.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>
