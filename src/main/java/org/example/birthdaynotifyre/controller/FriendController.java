@@ -49,7 +49,12 @@ public class FriendController {
                     required = true,
                     content = @Content(schema = @Schema(implementation = FriendDto.class))
             )
-            @RequestBody FriendDto friendDto) {
+            @RequestBody FriendDto friendDto,
+            @RequestParam(required = false) Long userId) {
+        // Если userId не передан в запросе, берем из контекста безопасности или используем дефолтный
+        if (userId != null) {
+            friendDto.setUserId(userId);
+        }
         return ResponseEntity.ok(friendService.create(friendDto));
     }
 

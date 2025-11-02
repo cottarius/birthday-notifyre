@@ -5,13 +5,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Entity
+@Table(name = "users")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Friend {
+public class User {
 
     /**
      * Идентификатор.
@@ -21,19 +23,16 @@ public class Friend {
     private Long id;
 
     /**
-     * Полное имя.
+     * Ф.И.О.
      */
+    @Column(unique = true, nullable = false)
     private String fullName;
 
-    /**
-     * Дата рождения.
-     */
-    private LocalDate birthDate;
+    private String telegramId;
 
     /**
-     * Пользователь, которому принадлежит друг.
+     * Список друзей пользователя.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Friend> friends = new ArrayList<>();
 }

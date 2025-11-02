@@ -13,3 +13,4 @@ spring:
 telegram:
   token: test-token
   chat_id: test-chat-id
+

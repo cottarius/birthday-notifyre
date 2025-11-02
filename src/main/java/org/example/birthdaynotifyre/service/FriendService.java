@@ -29,6 +29,9 @@ public class FriendService {
      * @return новый экземпляр сущности Friend
      */
     public Friend create(FriendDto friendDto) {
+        if (friendDto.getUserId() == null) {
+            throw new IllegalArgumentException("userId не может быть null");
+        }
         Friend friend = friendMapper.toEntity(friendDto);
         return friendRepository.save(friend);
     }
