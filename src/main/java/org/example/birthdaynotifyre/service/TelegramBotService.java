@@ -3,6 +3,7 @@ package org.example.birthdaynotifyre.service;
 import lombok.extern.slf4j.Slf4j;
 import org.example.birthdaynotifyre.dto.friend.FriendDto;
 import org.example.birthdaynotifyre.entity.Friend;
+import org.example.birthdaynotifyre.entity.User;
 import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,6 +34,7 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
     private final Map<String, String> tempUserData = new HashMap<>();
 
     private final FriendService friendService;
+    private final UserService userService;
     private final WeatherService weatherService;
     private final SubscriptionService subscriptionService;
 
@@ -41,11 +43,13 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
     @Autowired
     public TelegramBotService(@Value("${telegram.token}") String botToken,
                               FriendService friendService,
+                              UserService userService,
                               WeatherService weatherService,
                               SubscriptionService subscriptionService) {
 
         super(botToken);
         this.friendService = friendService;
+        this.userService = userService;
         this.weatherService = weatherService;
         this.subscriptionService = subscriptionService;
     }
@@ -56,13 +60,16 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
             String messageText = update.getMessage().getText();
             String chatId = update.getMessage().getChatId().toString();
             String userName = update.getMessage().getFrom().getFirstName();
+            String lastName = update.getMessage().getFrom().getLastName();
+            String firstName = update.getMessage().getFrom().getFirstName();
 
             log.info("Получено сообщение от {}: {}", userName, messageText);
 
             DialogState currentState = userStates.getOrDefault(chatId, DialogState.NONE);
 
             if (currentState != DialogState.NONE) {
-                handleDialog(chatId, messageText, currentState);
+                String fullName = lastName + " " + firstName;
+                handleDialog(chatId, messageText, currentState, fullName);
                 return;
             }
 
@@ -205,7 +212,7 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
         }
     }
 
-    private void handleDialog(String chatId, String messageText, DialogState currentState) {
+    private void handleDialog(String chatId, String messageText, DialogState currentState, String fullUserName) {
         if ("/cancel".equalsIgnoreCase(messageText)) {
             cancelDialog(chatId, currentState);
             return;
@@ -229,7 +236,7 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
                     String fullName = tempUserData.get(chatId + "_fullName");
 
                     if (fullName != null) {
-                        saveFriend(chatId, fullName, messageText);
+                        saveFriend(chatId, fullName, messageText, fullUserName);
                     } else {
                         sendMessage("Ошибка: данные ФИО не найдены. Начните добавление заново с команды /add", chatId);
                         log.error("Данные ФИО не найдены для chatId: {}", chatId);
@@ -251,6 +258,9 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
                     sendMessage("Пожалуйста, введите корректное название города на английском языке:\n" +
                             "Для отмены введите /cancel", chatId);
                 }
+                break;
+            case NONE:
+                // No action needed
                 break;
         }
     }
@@ -316,11 +326,15 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
         }
     }
 
-    private void saveFriend(String chatId, String fullName, String birthDateStr) {
+    private void saveFriend(String chatId, String fullName, String birthDateStr, String fullUserName) {
         try {
+            User userByTelegramId = userService.findUserByTelegramId(chatId);
+            userByTelegramId = createUserIfNotExist(userByTelegramId, chatId, fullUserName);
+            Long userId = userByTelegramId.getId();
             FriendDto friendDto = FriendDto.builder()
                     .fullName(fullName)
                     .birthDate(java.time.LocalDate.parse(birthDateStr))
+                    .userId(userId)
                     .build();
 
             friendService.create(friendDto);
@@ -335,6 +349,14 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
             log.error("Ошибка при добавлении друга: {}", e.getMessage());
             sendMessage("Произошла ошибка при добавлении друга. Попробуйте еще раз.", chatId);
         }
+    }
+
+    private User createUserIfNotExist(User userByTelegramId, String chatId, String fullUserName) {
+        if (userByTelegramId == null) {
+            return userService.createUser(chatId, fullUserName);
+        }
+
+        return userByTelegramId;
     }
 
     @Override

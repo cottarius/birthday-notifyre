@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <!-- Создание таблицы users -->
+    <changeSet id="001-create-users-table" author="olegprokopenko">
+        <createTable tableName="users">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="full_name" type="VARCHAR(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="telegram_id" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <!-- Добавляем индекс для telegram_id для быстрого поиска -->
+        <createIndex tableName="users" indexName="idx_users_telegram_id">
+            <column name="telegram_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Создание таблицы friend с внешним ключом на users -->
+    <changeSet id="002-create-friend-table" author="olegprokopenko">
+        <createTable tableName="friend">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="full_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="birth_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_friend_user_id"
+                             references="users(id)" deleteCascade="true"/>
+            </column>
+        </createTable>
+
+        <!-- Добавляем индекс для user_id для оптимизации запросов по пользователю -->
+        <createIndex tableName="friend" indexName="idx_friend_user_id">
+            <column name="user_id"/>
+        </createIndex>
+
+        <!-- Индекс для поиска по дате рождения (для уведомлений) -->
+        <createIndex tableName="friend" indexName="idx_friend_birth_date">
+            <column name="birth_date"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

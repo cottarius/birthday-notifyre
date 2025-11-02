@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="2.0-1" author="oaprokopenko">
+        <comment>Create subscriptions table for weather notifications</comment>
+
+        <createTable tableName="subscriptions">
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="chat_id" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_subscriptions_chat_id"/>
+            </column>
+            <column name="subscribed_to_weather" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2.0-2" author="oaprokopenko">
+        <comment>Create indexes for subscriptions table</comment>
+
+        <createIndex indexName="idx_subscriptions_chat_id"
+                     tableName="subscriptions"
+                     unique="false">
+            <column name="chat_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_subscriptions_weather"
+                     tableName="subscriptions"
+                     unique="false">
+            <column name="subscribed_to_weather"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

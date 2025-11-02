@@ -29,4 +29,10 @@ public class FriendDto {
      */
     @Schema(description = "Дата рождения", example = "1990-05-15")
     private LocalDate birthDate;
+
+    /**
+     * Идентификатор пользователя.
+     */
+    @Schema(description = "ID пользователя", example = "1")
+    private Long userId;
 }

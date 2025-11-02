@@ -1,6 +1,7 @@
 package org.example.birthdaynotifyre.repository;
 
 import org.example.birthdaynotifyre.entity.Friend;
+import org.example.birthdaynotifyre.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,4 +22,8 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
      */
     @Query("SELECT f FROM Friend f WHERE EXTRACT(MONTH FROM f.birthDate) = :month AND EXTRACT(DAY FROM f.birthDate) = :day")
     List<Friend> findByBirthDateMonthAndDay(@Param("month") int month, @Param("day") int day);
+
+    List<Friend> findByUser(User user);
+
+    List<Friend> findByUserId(Long id);
 }
