@@ -140,18 +140,18 @@ public class TelegramBotService extends TelegramLongPollingBot implements Notifi
 
     private static String showHelp() {
         return """
-            Доступные команды:
-            /start - начать работу
-            /help - помощь
-            /add - добавить нового друга
-            /today - посмотреть у кого сегодня день рождения
-            /cancel - отменить текущую операцию
-            /weather_taganrog - показывает погоду в Таганроге
-            /weather - показывает погоду в заданном вами городе
-            /subscribe - подписаться на утреннюю рассылку погоды в Таганроге (7:00)
-            /unsubscribe - отписаться от утренней рассылки погоды
-            /subscriptions - показать статус подписки
-            """;
+                Доступные команды:
+                /start - начать работу
+                /help - помощь
+                /add - добавить нового друга
+                /today - посмотреть у кого сегодня день рождения
+                /cancel - отменить текущую операцию
+                /weather_taganrog - показывает погоду в Таганроге
+                /weather - показывает погоду в заданном вами городе
+                /subscribe - подписаться на утреннюю рассылку погоды в Таганроге (7:00)
+                /unsubscribe - отписаться от утренней рассылки погоды
+                /subscriptions - показать статус подписки
+                """;
     }
 
     private void getWeatherInTaganrog(String chatId) {

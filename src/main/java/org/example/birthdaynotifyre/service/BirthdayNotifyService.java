@@ -43,8 +43,6 @@ public class BirthdayNotifyService {
         
         if (friendsWithBirthday.isEmpty()) {
             log.info(NO_BIRTHDAY_FOUND);
-            message = NO_BIRTHDAY_FOUND;
-            telegramBotService.sendMessage(message, chatId);
             return;
         }
         
